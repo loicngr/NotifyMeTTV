@@ -52,8 +52,49 @@ export async function getTwitchUserByLogin (userLogin, twitchAccessToken) {
   return null
 }
 
+export async function getFullTwitchUserStreams (data, users, twitchAccessToken) {
+  data ??= []
+  users ??= []
+
+  if (users.length === 0) {
+    return data
+  }
+
+  let path = `https://api.twitch.tv/helix/streams?first=100`
+  path += `&user_login=${users.splice(0, 100).join('&user_login=')}`
+
+  const request = await fetch(path, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${twitchAccessToken}`,
+      'Client-ID': TWITCH_CLIENT_ID
+    },
+    mode: 'cors',
+    cache: 'default'
+  })
+
+  if (request.ok) {
+    const response = await request.json()
+
+    if (typeof response !== 'undefined') {
+      data = [
+        ...data,
+        ...(response.data ?? []),
+      ]
+
+      return getFullTwitchUserStreams(
+        data,
+        users,
+        twitchAccessToken
+      )
+    }
+  }
+
+  return []
+}
+
 export async function getTwitchUserStream (userLogin, twitchAccessToken) {
-  // TODO: pagination (https://dev.twitch.tv/docs/api/reference/#get-streams)
   const request = await fetch(`https://api.twitch.tv/helix/streams?user_login=${userLogin}`, {
     method: 'GET',
     headers: {

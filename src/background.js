@@ -1,7 +1,8 @@
 import {
+  createAudioWindow,
   extractTokenFromUrl,
+  getFullUsersOnStreams,
   getTwitchOauthUrl,
-  getUsersOnStreams
 } from './utils.js'
 import {
   getTwitchCurrentUser,
@@ -42,26 +43,20 @@ async function openTwitchOauth () {
 
 async function notificationOnStream (options = {}, userStream) {
   await chrome.notifications.create(
-    NOTIFICATION_STREAM_START,
+    `${NOTIFICATION_STREAM_START}-${userStream.user_login}`,
     {
-      title: 'En STREAM !',
+      title: userStream.user_name,
       iconUrl: chrome.runtime.getURL('src/assets/logo.jpg'),
       message: '',
       type: 'basic',
+      priority: 2,
       isClickable: true,
       ...options,
+    },
+    () => {
+      // createAudioWindow()
     }
   )
-
-  if (typeof chrome.runtime.lastError === 'undefined') {
-    chrome.notifications.onClicked.addListener((async function (a) {
-      if (a !== NOTIFICATION_STREAM_START) {
-        return
-      }
-
-      chrome.tabs.create({ url: `https://www.twitch.tv/${userStream.user_login}` })
-    }))
-  }
 }
 
 async function notify () {
@@ -76,12 +71,27 @@ async function notify () {
     return
   }
 
+  // Remove old notifications
+  chrome.notifications.getAll((ids) => {
+    for (const id of Object.keys(ids)) {
+      chrome.notifications.clear(id)
+    }
+  })
+
+  // Add event listeners for new notification
+  chrome.notifications.onClicked.addListener((async function (a) {
+    if (a.startsWith(NOTIFICATION_STREAM_START)) {
+      const userLogin = a.split('-')[1]
+      chrome.tabs.create({ url: `https://www.twitch.tv/${userLogin}` })
+    }
+  }))
+
   const newUserStream = {}
   for (const userStream of usersNotNotify) {
     await notificationOnStream({
       message: userStream.title,
       iconUrl: userStream.thumbnail_url.replace('{width}', 100).replace('{height}', 60),
-      contextMessage: userStream.game_name,
+      contextMessage: `${userStream.game_name} (${userStream.viewer_count} viewers)`,
     }, userStream)
 
     newUserStream[userStream.user_id] = {
@@ -100,7 +110,7 @@ async function main () {
   initCount = 0
 
   const usersData = (await State.usersData) ?? {}
-  const usersOnStream = await getUsersOnStreams()
+  const usersOnStream = await getFullUsersOnStreams()
   const clonedUsersData = {}
 
   await Promise.all(usersOnStream.map(async (userOnStream) => {

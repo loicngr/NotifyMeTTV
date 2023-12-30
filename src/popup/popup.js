@@ -2,7 +2,9 @@ import { State } from '../state.js'
 import {
   getTwitchUserByLogin,
 } from '../api.js'
-import { getUsersOnStreams } from '../utils.js'
+import {
+  getFullUsersOnStreams,
+} from '../utils.js'
 
 function getDomElements () {
   const formElement = document.getElementById('form')
@@ -68,7 +70,7 @@ async function updateListStatus () {
     liElements,
   } = getDomElements()
 
-  const userLoginsOnStream = (await getUsersOnStreams()).map(u => u.user_login)
+  const userLoginsOnStream = (await getFullUsersOnStreams()).map(u => u.user_login)
 
   liElements.forEach((e) => {
     if (userLoginsOnStream.includes(e.textContent)) {

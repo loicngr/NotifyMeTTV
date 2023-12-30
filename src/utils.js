@@ -4,7 +4,10 @@ import {
   TWITCH_SCOPES
 } from './consts.js'
 import { State } from './state.js'
-import { getTwitchUserStream } from './api.js'
+import {
+  getFullTwitchUserStreams,
+  getTwitchUserStream
+} from './api.js'
 
 export function getTwitchOauthUrl () {
   if (!TWITCH_CLIENT_ID) {
@@ -26,6 +29,26 @@ export async function getUsersOnStreams () {
   const userLogins = (await State.users) ?? []
   const users = await Promise.all(userLogins.map((userLogin) => getTwitchUserStream(userLogin, accessToken)))
   return users.filter((u) => u !== null)
+}
+
+export async function getFullUsersOnStreams () {
+  const accessToken = await State.accessToken
+  const userLogins = (await State.users) ?? []
+  const users = await getFullTwitchUserStreams([], userLogins, accessToken)
+  return users.filter((u) => u !== null)
+}
+
+export async function createAudioWindow () {
+  const newWindow = await chrome.windows.create({
+    type: 'popup',
+    focused: false,
+    state: 'minimized',
+    url: chrome.runtime.getURL('audio.html')
+  })
+
+  setTimeout(async () => {
+    await chrome.windows.remove(newWindow.id)
+  }, 3500)
 }
 
 export function clearStorage () {
