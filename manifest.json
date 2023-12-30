@@ -1,0 +1,29 @@
+{
+  "name": "NotifyMeTTV",
+  "description": "Get notified when someone in your list has started livestream on Twitch",
+  "version": "1.1",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "identity",
+    "storage",
+    "unlimitedStorage",
+    "alarms",
+    "notifications",
+    "tabs"
+  ],
+  "icons": {
+    "16": "src/assets/16.jpg",
+    "32": "src/assets/32.jpg",
+    "48": "src/assets/48.jpg",
+    "128": "src/assets/128.jpg"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": "src/assets/logo.jpg"
+  },
+  "update_url": "https://clients2.google.com/service/update2/crx"
+}

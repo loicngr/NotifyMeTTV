@@ -1,0 +1,31 @@
+html, body {
+  margin: 0;
+  background-color: teal;
+}
+
+.content {
+  min-width: 200px;
+  min-height: 300px;
+
+  padding: 10px;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  text-align: center;
+}
+
+ul li:hover {
+  cursor: not-allowed;
+}
+
+input {
+  width: 100%
+}
+
+button {
+  width: 100%
+}
