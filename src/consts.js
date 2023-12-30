@@ -1,5 +1,5 @@
 export const NOTIFICATION_STREAM_START = 'notificationStreamStart'
-export const TWITCH_CLIENT_ID = 've6q0o5skjqeqfk5nkx6eaucl7vuf1'
+export const TWITCH_CLIENT_ID = ''
 export const TWITCH_REDIRECT_URL = 'https://jbimlmhhhnhdlaebclplijleejkfdang.chromiumapp.org/'
 export const TWITCH_SCOPES = ''
 export const STORE_ACCESS_TOKEN_KEY = 'accessToken'
