@@ -1,5 +1,6 @@
 import {
   STORE_ACCESS_TOKEN_KEY,
+  STORE_SETTINGS_KEY,
   STORE_USERS_DATA_KEY,
   STORE_USERS_KEY
 } from './consts.js'
@@ -34,5 +35,13 @@ export const State = {
     return new Promise((resolve) => {
       chrome.storage.local.set({ [STORE_USERS_DATA_KEY]: val }).then(() => resolve(true))
     })
+  },
+  get [STORE_SETTINGS_KEY] () {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([STORE_SETTINGS_KEY], r => resolve(r[STORE_SETTINGS_KEY]))
+    })
+  },
+  set [STORE_SETTINGS_KEY] (val) {
+    chrome.storage.local.set({ [STORE_SETTINGS_KEY]: val })
   },
 }

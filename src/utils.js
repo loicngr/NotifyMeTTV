@@ -9,6 +9,66 @@ import {
   getTwitchUserStream
 } from './api.js'
 
+let creatingOffscreenDocument
+
+async function hasOffscreenDocument (offscreenUrl) {
+  if ('getContexts' in chrome.runtime) {
+    const contexts = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT'],
+      documentUrls: [offscreenUrl]
+    })
+    return contexts.length > 0
+  }
+
+  const matchedClients = await clients.matchAll()
+  return await matchedClients.some(client => {
+    client.url.includes(chrome.runtime.id)
+  })
+}
+
+async function playSoundSetting () {
+  const settings = (await State.settings) ?? {}
+  return settings.audio ?? false
+}
+
+export async function playSound () {
+  await setupOffscreenDocument()
+
+  if (await playSoundSetting()) {
+    await chrome.runtime.sendMessage({ type: 'play-audio' })
+  }
+}
+
+export async function setupOffscreenDocument () {
+  const path = 'src/audio.html'
+  const offscreenUrl = chrome.runtime.getURL(path)
+
+  if (await hasOffscreenDocument(offscreenUrl)) {
+    return
+  }
+
+  if (creatingOffscreenDocument) {
+    await creatingOffscreenDocument
+  } else {
+    creatingOffscreenDocument = chrome.offscreen.createDocument({
+      url: path,
+      reasons: [
+        'AUDIO_PLAYBACK'
+      ],
+      justification: 'notification',
+    })
+
+    await creatingOffscreenDocument
+    creatingOffscreenDocument = null
+  }
+}
+
+export function removeAllNotifications () {
+  chrome.notifications.getAll((ids) => {
+    Object.keys(ids).map((id) => chrome.notifications.clear(id))
+  })
+}
+
 export function getTwitchOauthUrl () {
   if (!TWITCH_CLIENT_ID) {
     console.error('Twitch app client id not find')

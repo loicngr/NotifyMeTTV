@@ -2,6 +2,9 @@ import {
   extractTokenFromUrl,
   getFullUsersOnStreams,
   getTwitchOauthUrl,
+  playSound,
+  removeAllNotifications,
+  setupOffscreenDocument,
 } from './utils.js'
 import {
   getTwitchCurrentUser,
@@ -53,7 +56,7 @@ async function notificationOnStream (options = {}, userStream) {
       ...options,
     },
     () => {
-      // createAudioWindow()
+      playSound()
     }
   )
 }
@@ -70,12 +73,7 @@ async function notify () {
     return
   }
 
-  // Remove old notifications
-  chrome.notifications.getAll((ids) => {
-    for (const id of Object.keys(ids)) {
-      chrome.notifications.clear(id)
-    }
-  })
+  removeAllNotifications()
 
   // Add event listeners for new notification
   chrome.notifications.onClicked.addListener((async function (a) {
@@ -107,6 +105,7 @@ async function notify () {
 
 async function main () {
   initCount = 0
+  await setupOffscreenDocument()
 
   const usersData = (await State.usersData) ?? {}
   const usersOnStream = await getFullUsersOnStreams()
@@ -140,6 +139,17 @@ async function init (accessToken) {
   if (initCount > 5) {
     console.error('loop init : ' + accessToken)
     return
+  }
+
+  const settings = await State.settings
+  if (
+    typeof settings === 'undefined' ||
+    Object.keys(settings).length > 0
+  ) {
+    State.settings = {
+      audio: true,
+      ...settings,
+    }
   }
 
   if (typeof accessToken === 'undefined') {
@@ -177,6 +187,9 @@ chrome.runtime.onMessage.addListener(async ({ type }) => {
   switch (type) {
     case 'reset':
       await main()
+      break
+    case 'reset-init':
+      await init()
       break
     default:
       break
