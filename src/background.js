@@ -1,5 +1,4 @@
 import {
-  createAudioWindow,
   extractTokenFromUrl,
   getFullUsersOnStreams,
   getTwitchOauthUrl,

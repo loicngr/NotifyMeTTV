@@ -38,19 +38,6 @@ export async function getFullUsersOnStreams () {
   return users.filter((u) => u !== null)
 }
 
-export async function createAudioWindow () {
-  const newWindow = await chrome.windows.create({
-    type: 'popup',
-    focused: false,
-    state: 'minimized',
-    url: chrome.runtime.getURL('audio.html')
-  })
-
-  setTimeout(async () => {
-    await chrome.windows.remove(newWindow.id)
-  }, 3500)
-}
-
 export function clearStorage () {
   chrome.storage.local.clear()
   chrome.storage.session.clear()
