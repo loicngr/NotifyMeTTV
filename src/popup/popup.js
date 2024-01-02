@@ -58,9 +58,16 @@ function generateListListener () {
   } = getDomElements()
 
   liElements.forEach((e) => {
-    e.addEventListener('click', async () => {
-      await removeUser(e.textContent)
+    const deleteElement = e.getElementsByClassName('li-delete')[0]
+    const statusElement = e.getElementsByClassName('li-status')[0]
+
+    deleteElement.addEventListener('click', async () => {
+      await removeUser(deleteElement.getAttribute('data-id'))
       generateList()
+    })
+
+    statusElement.addEventListener('click', async () => {
+      chrome.tabs.create({ url: `https://www.twitch.tv/${statusElement.getAttribute('data-id')}` })
     })
   })
 }
@@ -73,10 +80,11 @@ async function updateListStatus () {
   const userLoginsOnStream = (await getFullUsersOnStreams()).map(u => u.user_login)
 
   liElements.forEach((e) => {
-    if (userLoginsOnStream.includes(e.textContent)) {
-      e.style.color = '#10eb10'
+    const statusElement = e.getElementsByClassName('li-status')[0]
+    if (userLoginsOnStream.includes(statusElement.getAttribute('data-id'))) {
+      statusElement.style.background = '#10eb10'
     } else {
-      e.style.color = '#da043c'
+      statusElement.style.background = '#da043c'
     }
   })
 }
@@ -99,8 +107,18 @@ function generateList () {
         const ulLiElement = document.createElement('li')
         ulLiElement.textContent = u
         ulLiElement.classList.add('li')
-        ulLiElement.style.color = '#da043c'
-        ulLiElement.style.fontWeight = 'bold'
+
+        const ulLiSpanStatusElement = document.createElement('span')
+        ulLiSpanStatusElement.classList.add('li-status')
+        ulLiSpanStatusElement.setAttribute('data-id', u)
+        ulLiElement.prepend(ulLiSpanStatusElement)
+
+        const ulLiSpanDeleteElement = document.createElement('span')
+        ulLiSpanDeleteElement.classList.add('li-delete')
+        ulLiSpanDeleteElement.setAttribute('data-id', u)
+        ulLiSpanDeleteElement.textContent = 'X'
+        ulLiElement.appendChild(ulLiSpanDeleteElement)
+
         ulElement.appendChild(ulLiElement)
       })
 
@@ -126,6 +144,10 @@ function printError (error) {
 
 function main () {
   generateList()
+  const buttonOptionsElement = document.querySelector('.footer > button')
+  buttonOptionsElement.addEventListener('click', () => {
+    chrome.runtime.openOptionsPage()
+  })
 
   const {
     formElement,

@@ -21,6 +21,8 @@ builds
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
 
+src/dev-consts.js
+
 # Gradle
 .idea/**/gradle.xml
 .idea/**/libraries

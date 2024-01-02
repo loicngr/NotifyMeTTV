@@ -30,6 +30,10 @@ async function openTwitchOauth () {
       url,
       interactive: true
     }, async (flowRedirectUrl) => {
+      if (typeof flowRedirectUrl === 'undefined') {
+        rej(false)
+      }
+
       const accessToken = extractTokenFromUrl(flowRedirectUrl)
       State.accessToken = accessToken
 
@@ -136,7 +140,7 @@ function handleTwitchOauth () {
 async function init (accessToken) {
   initCount += 1
 
-  if (initCount > 5) {
+  if (initCount > 3) {
     console.error('loop init : ' + accessToken)
     return
   }
