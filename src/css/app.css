@@ -1,0 +1,4 @@
+/* app global css */
+div[role="alert"] {
+  color: white !important;
+}
