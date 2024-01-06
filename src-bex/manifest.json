@@ -7,7 +7,6 @@
   },
   "permissions": [
     "storage",
-    "activeTab",
     "identity",
     "unlimitedStorage",
     "alarms",
