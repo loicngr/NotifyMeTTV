@@ -11,6 +11,18 @@ import {
 
 let creatingOffscreenDocument
 
+export async function hasPopUpDocument () {
+  if (!('getContexts' in chrome.runtime)) {
+    return false
+  }
+
+  const contexts = await chrome.runtime.getContexts({
+    contextTypes: ['POPUP']
+  })
+
+  return contexts.length > 0
+}
+
 async function hasOffscreenDocument (offscreenUrl) {
   if (!('getContexts' in chrome.runtime)) {
     return false
@@ -37,7 +49,7 @@ export async function playSound () {
 }
 
 export async function setupOffscreenDocument () {
-  const path = 'src/audio.html'
+  const path = 'www/audio.html'
   const offscreenUrl = chrome.runtime.getURL(path)
 
   if (await hasOffscreenDocument(offscreenUrl)) {

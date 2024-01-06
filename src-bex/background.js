@@ -10,6 +10,7 @@ import {
   extractTokenFromUrl,
   getFullUsersOnStreams,
   getTwitchOauthUrl,
+  hasPopUpDocument,
   playSound,
   removeAllNotifications,
   setupOffscreenDocument
@@ -108,6 +109,11 @@ async function notify () {
 
 async function main () {
   initCount = 0
+
+  if (await hasPopUpDocument()) {
+    await chrome?.runtime?.sendMessage({ type: 'connected' })
+  }
+
   await setupOffscreenDocument()
 
   const usersData = (await State.usersData) ?? {}
@@ -132,11 +138,11 @@ async function main () {
 
 function handleTwitchOauth () {
   openTwitchOauth()
-    .then(() => main())
-    .catch(() => init())
+    .finally(() => init())
 }
 
 async function init (accessToken) {
+  accessToken ??= await State.accessToken
   initCount += 1
 
   if (initCount > 3) {
@@ -175,11 +181,29 @@ async function init (accessToken) {
   await main()
 }
 
-State.accessToken
-  .then(init)
-
-export default bexBackground(() => {
-  // TODO: use quasar bridge
+export default bexBackground((/* bridge */) => {
+  // Usage:
+  // const { data } = await bridge.send('storage.get', { key: 'someKey' })
+  // bridge.on('storage.get', ({ data, respond }) => {
+  //   const { key } = data
+  //   if (key === null) {
+  //     chrome.storage.local.get(null, items => {
+  //       return respond(Object.values(items))
+  //     })
+  //   } else {
+  //     chrome.storage.local.get([key], items => {
+  //       return respond(items[key])
+  //     })
+  //   }
+  // })
+  //
+  // // Usage:
+  // // await bridge.send('storage.set', { key: 'someKey', value: 'someValue' })
+  // bridge.on('storage.set', ({ data, respond }) => {
+  //   chrome.storage.local.set({ [data.key]: data.value }, () => {
+  //     return respond()
+  //   })
+  // })
 })
 
 chrome.alarms.onAlarm.addListener(async ({ name }) => {
@@ -206,10 +230,5 @@ chrome.runtime.onMessage.addListener(async ({ type }) => {
   }
 })
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.action.onClicked.addListener((/* tab */) => {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('www/index.html')
-    }, () => {})
-  })
-})
+State.accessToken
+  .then(init)

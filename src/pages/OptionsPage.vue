@@ -1,71 +1,114 @@
 <template>
-  <q-page>
-    <div>
-      <form id="form">
-        <label for="form-audio">Audio</label>
-        <input type="checkbox" name="Audio" id="form-audio">
+  <q-page
+    class="flex justify-center items-center"
+  >
+    <div class="column">
+      <q-card class="col">
+        <q-card-section>
+          <span class="text-caption full-width">
+            {{ status }}
+          </span>
 
-        <button type="submit" id="form-button">Save</button>
-      </form>
-    </div>
+          <q-form
+            @submit.prevent="onSubmit"
+            class="row"
+          >
+            <q-checkbox
+              v-model="sound"
+              label="Audio (notification)"
+              class="col-12"
+            />
 
-    <br>
+            <div class="row col-12 q-mt-md">
+              <q-btn
+                @click="resetAll"
+                label="Reset all"
+                class="col-6"
+                dense
+              />
 
-    <div>
-      <button id="button-reset-all">Reset all</button>
+              <q-btn
+                type="submit"
+                label="Save"
+                class="col-5 offset-1"
+                dense
+              />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+
+      <div class="col text-center q-mt-md text-white">
+        By <a
+        class="cursor-pointer text-weight-bold"
+        @click="openTab('https://x.com/zaekof')"
+      >
+        Zaekof
+      </a>
+      </div>
     </div>
   </q-page>
 </template>
 
 <script setup>
-// TODO: convert to vue 3
-// import { State } from '../state.js'
-// import {
-//   clearStorage,
-//   removeAllNotifications
-// } from '../utils.js'
-//
-// function saveSettings (settings = {}) {
-//   State.settings = settings
-// }
-//
-// async function getSettings () {
-//   return await State.settings ?? {}
-// }
-//
-// async function applySettings () {
-//   const settings = await getSettings()
-//
-//   const inputAudioElement = document.getElementById('form-audio')
-//   inputAudioElement.checked = settings.audio ?? false
-// }
-//
-// async function main () {
-//   await applySettings()
-//
-//   const buttonResetElement = document.getElementById('button-reset-all')
-//   buttonResetElement.addEventListener('click', async () => {
-//     clearStorage()
-//     chrome.runtime.sendMessage({ type: 'reset-init' })
-//     setTimeout(async () => {
-//       await applySettings()
-//     }, 500)
-//     removeAllNotifications()
-//   })
-//
-//   const formElement = document.getElementById('form')
-//   formElement.addEventListener('submit', async (e) => {
-//     e.preventDefault()
-//
-//     const inputAudioElement = document.getElementById('form-audio')
-//
-//     saveSettings({
-//       audio: inputAudioElement.checked ?? false
-//     })
-//   })
-// }
-//
-// void main()
+import {
+  onMounted,
+  ref
+} from 'vue'
+import { State } from '../../common/state'
+import {
+  clearStorage,
+  removeAllNotifications
+} from '../../common/utils'
+
+const status = ref('')
+const sound = ref(false)
+
+function openTab (url) {
+  chrome.tabs.create({ url })
+}
+
+function setStatus (text) {
+  status.value = text
+
+  setTimeout(() => {
+    status.value = ''
+  }, 2000)
+}
+
+function resetAll () {
+  clearStorage()
+  chrome.runtime.sendMessage({ type: 'reset-init' })
+  setTimeout(async () => {
+    await applySettings()
+  }, 500)
+  removeAllNotifications()
+  setStatus('Settings reset to default')
+}
+
+function saveSettings (settings = {}) {
+  State.settings = settings
+  setStatus('Settings saved')
+}
+
+async function getSettings () {
+  return await State.settings ?? {}
+}
+
+async function applySettings () {
+  const settings = await getSettings()
+  sound.value = settings.audio ?? false
+}
+
+function onSubmit () {
+  saveSettings({
+    audio: sound.value ?? false
+  })
+}
+
+onMounted(async () => {
+  await applySettings()
+})
 
 </script>
 

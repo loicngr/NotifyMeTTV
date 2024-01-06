@@ -1,6 +1,6 @@
 {
   "name": "notify-me-ttv",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "Get notified when someone in your custom list has started livestream on Twitch",
   "productName": "NotifyMeTTV",
   "author": "loicngr <pro.nogierloic@gmail.com>",
@@ -8,6 +8,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
     "dev": "quasar dev -m bex",
+    "dev:src": "quasar dev",
     "icons": "icongenie generate -m bex -i ./icon.png",
     "build": "quasar build -m bex"
   },

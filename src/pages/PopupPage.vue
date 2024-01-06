@@ -1,309 +1,247 @@
 <template>
-  <q-page>
-    <div class="content">
-      <div id="errors"></div>
-      <form id="form">
-        <input name="login" id="form-input" type="text" placeholder="user login name" autofocus/>
-        <button type="submit" id="form-button">ADD</button>
-      </form>
-      <ul id="ul">
-      </ul>
+  <q-page class="q-pa-sm">
+    <template
+      v-if="typeof accessToken === 'string'"
+    >
+      <q-form
+        class="row"
+        ref="formRef"
+        @submit.prevent="validateSubmit"
+      >
+        <q-input
+          v-model.trim="userLogin"
+          dense
+          lazy-rules
+          :rules="[
+          val => !!val || '* Required',
+          val => val.length >= 2 || 'Too short',
+        ]"
+          ref="inputRef"
+          type="text"
+          :error="typeof error === 'string'"
+          bg-color="white"
+          prefix="https://twitch.tv/"
+          :readonly="loading"
+          class="col-12"
+          label-slot
+          :error-message="error"
+          outlined
+          clearable
+          color="white"
+          maxlength="40"
+          :loading="loading"
+        >
+          <template #label>
+          <span class="text-weight-bold text-deep-purple-6">
+            User login
+          </span>
+          </template>
+          <template #append>
+            <q-btn
+              round
+              dense
+              flat
+              :loading="loading"
+              color="deep-purple-6"
+              icon="add"
+              @click.prevent="validateSubmit"
+            />
+          </template>
+        </q-input>
+      </q-form>
+
+      <q-virtual-scroll
+        style="max-height: 300px;"
+        :items="usersSorted"
+        separator
+        v-slot="{ item: user }"
+      >
+        <q-item
+          :key="user.user_login"
+          class="items-center"
+          dense
+        >
+          <q-item-section
+            class="text-white cursor-pointer"
+            @click="openTab(`https://www.twitch.tv/${user.user_login}`)"
+          >
+            {{ user.user_login }} <br>
+            <span
+              v-if="typeof user.data !== 'undefined'"
+              class="text-caption"
+              style="font-size: 0.6rem !important;"
+            >
+              {{ user.data.game_name }} ({{ user.data.viewer_count }} viewers)
+            </span>
+          </q-item-section>
+          <q-item-section
+            avatar
+            class="inline-block"
+          >
+            <q-icon
+              :color="user.online ? 'green' : 'red'"
+              name="circle"
+              class="q-mr-sm"
+            />
+            <q-icon
+              color="red"
+              name="close"
+              @click="removeUser(user.user_login) && refreshUsers()"
+              class="cursor-pointer"
+            />
+          </q-item-section>
+        </q-item>
+      </q-virtual-scroll>
+    </template>
+    <div
+      v-else
+      class="text-center text-weight-bold text-white"
+    >
+      Status: Not connected <br>
+      <q-btn
+        class="q-mt-md"
+        label="Connect"
+        text-color="deep-purple-6"
+        color="white"
+        @click="onConnect"
+      />
     </div>
-    <div class="footer">
-      <button type="button">Options</button>
-    </div>
+
+    <q-page-sticky
+      position="bottom-right"
+      :offset="[5, 5]"
+    >
+      <q-btn
+        icon="settings"
+        dense
+        fab-mini
+        unelevated
+        text-color="white"
+        @click="openOption"
+      />
+    </q-page-sticky>
   </q-page>
 </template>
 
 <script setup>
+import {
+  computed,
+  ref,
+  watchEffect
+} from 'vue'
+import { getTwitchUserByLogin } from '../../common/api'
+import { State } from '../../common/state'
+import { getFullUsersOnStreams } from '../../common/utils'
 
-// TODO: convert vue 3
-// import { State } from '../state.js'
-// import {
-//   getTwitchUserByLogin,
-// } from '../api.js'
-// import {
-//   getFullUsersOnStreams,
-// } from '../utils.js'
-//
-// function getDomElements () {
-//   const formElement = document.getElementById('form')
-//   const inputElement = document.getElementById('form-input')
-//   const buttonElement = document.getElementById('form-button')
-//   const ulElement = document.getElementById('ul')
-//   const liElements = document.querySelectorAll('.li')
-//
-//   return {
-//     formElement,
-//     inputElement,
-//     buttonElement,
-//     ulElement,
-//     liElements
-//   }
-// }
-//
-// function elementsOnLoad (status = true) {
-//   const {
-//     inputElement,
-//     buttonElement
-//   } = getDomElements()
-//
-//   buttonElement.disabled = status
-//   inputElement.disabled = status
-//   buttonElement.textContent = status ? 'Loading...' : 'Add'
-// }
-//
-// async function getUsers () {
-//   return await State.users
-// }
-//
-// async function addUser (userLogin) {
-//   const actualUsers = (await getUsers()) ?? []
-//
-//   State.users = [
-//     userLogin,
-//     ...actualUsers,
-//   ]
-// }
-//
-// async function removeUser (userLogin) {
-//   const actualUsers = (await getUsers()) ?? []
-//
-//   State.users = actualUsers.filter((u) => u !== userLogin)
-// }
-//
-// function generateListListener () {
-//   const {
-//     liElements,
-//   } = getDomElements()
-//
-//   liElements.forEach((e) => {
-//     const deleteElement = e.getElementsByClassName('li-delete')[0]
-//     const statusElement = e.getElementsByClassName('li-status')[0]
-//
-//     deleteElement.addEventListener('click', async () => {
-//       await removeUser(deleteElement.getAttribute('data-id'))
-//       generateList()
-//     })
-//
-//     statusElement.addEventListener('click', async () => {
-//       chrome.tabs.create({ url: `https://www.twitch.tv/${statusElement.getAttribute('data-id')}` })
-//     })
-//   })
-// }
-//
-// async function updateListStatus () {
-//   const {
-//     liElements,
-//   } = getDomElements()
-//
-//   const userLoginsOnStream = (await getFullUsersOnStreams()).map(u => u.user_login)
-//
-//   liElements.forEach((e) => {
-//     const statusElement = e.getElementsByClassName('li-status')[0]
-//     if (userLoginsOnStream.includes(statusElement.getAttribute('data-id'))) {
-//       statusElement.style.background = '#10eb10'
-//     } else {
-//       statusElement.style.background = '#da043c'
-//     }
-//   })
-// }
-//
-// function sendMessage (message) {
-//   chrome.runtime.sendMessage(message)
-// }
-//
-// function generateList () {
-//   getUsers()
-//     .then(async (users) => {
-//       const {
-//         liElements,
-//         ulElement,
-//       } = getDomElements()
-//
-//       liElements.forEach((e) => e.remove())
-//
-//       ;(users ?? []).forEach((u) => {
-//         const ulLiElement = document.createElement('li')
-//         ulLiElement.textContent = u
-//         ulLiElement.classList.add('li')
-//
-//         const ulLiSpanStatusElement = document.createElement('span')
-//         ulLiSpanStatusElement.classList.add('li-status')
-//         ulLiSpanStatusElement.setAttribute('data-id', u)
-//         ulLiElement.prepend(ulLiSpanStatusElement)
-//
-//         const ulLiSpanDeleteElement = document.createElement('span')
-//         ulLiSpanDeleteElement.classList.add('li-delete')
-//         ulLiSpanDeleteElement.setAttribute('data-id', u)
-//         ulLiSpanDeleteElement.textContent = 'X'
-//         ulLiElement.appendChild(ulLiSpanDeleteElement)
-//
-//         ulElement.appendChild(ulLiElement)
-//       })
-//
-//       await updateListStatus()
-//       generateListListener()
-//     })
-// }
-//
-// function printError (error) {
-//   const errorsElement = document.getElementById('errors')
-//   errorsElement.innerHTML = ''
-//
-//   const errorElement = document.createElement('p')
-//
-//   errorElement.textContent = error
-//   errorElement.style.color = 'red'
-//   errorsElement.appendChild(errorElement)
-//
-//   setTimeout(() => {
-//     errorsElement.innerHTML = ''
-//   }, 3000)
-// }
-//
-// function main () {
-//   generateList()
-//   const buttonOptionsElement = document.querySelector('.footer > button')
-//   buttonOptionsElement.addEventListener('click', () => {
-//     chrome.runtime.openOptionsPage()
-//   })
-//
-//   const {
-//     formElement,
-//     inputElement
-//   } = getDomElements()
-//
-//   formElement.addEventListener('submit', async (e) => {
-//     e.preventDefault()
-//     const value = inputElement.value
-//     const strippedValue = value.trim().toLowerCase()
-//
-//     if (strippedValue.length <= 1) {
-//       inputElement.value = ''
-//       printError('Too short')
-//       elementsOnLoad(false)
-//       return
-//     }
-//
-//     elementsOnLoad(true)
-//
-//     const accessToken = await State.accessToken
-//
-//     if (typeof accessToken !== 'string') {
-//       inputElement.value = ''
-//       printError('Not connected')
-//       return
-//     }
-//
-//     getTwitchUserByLogin(strippedValue, accessToken)
-//       .then((userValid) => {
-//         elementsOnLoad(false)
-//
-//         if (userValid === null) {
-//           const {
-//             inputElement
-//           } = getDomElements()
-//
-//           inputElement.value = ''
-//           inputElement.focus()
-//           printError('User not found')
-//           return
-//         }
-//
-//         addUser(strippedValue)
-//           .then(() => {
-//             const {
-//               inputElement
-//             } = getDomElements()
-//
-//             inputElement.value = ''
-//             inputElement.focus()
-//
-//             sendMessage({
-//               type: 'reset',
-//             })
-//             setTimeout(() => {
-//               generateList()
-//             }, 500)
-//           })
-//       })
-//   })
-// }
-//
-// main()
+const error = ref()
+const loading = ref(false)
+const userLogin = ref()
+const inputRef = ref(null)
+const formRef = ref(null)
+const users = ref([])
+const accessToken = ref()
+
+const usersSorted = computed(() => {
+  return (users.value ?? []).sort((a, b) => {
+    return (a.online === b.online)
+      ? 0
+      : a.online
+        ? -1
+        : 1
+  })
+})
+
+watchEffect(async () => {
+  accessToken.value = await State.accessToken
+  await refreshUsers()
+})
+
+chrome?.runtime?.onMessage?.addListener(async ({ type }) => {
+  switch (type) {
+    case 'connected':
+      accessToken.value = await State.accessToken
+      await refreshUsers()
+      break
+    default:
+      break
+  }
+})
+
+function openTab (url) {
+  chrome.tabs.create({ url })
+}
+
+function openOption () {
+  chrome.runtime.openOptionsPage()
+}
+
+function onConnect () {
+  chrome?.runtime?.sendMessage({
+    type: 'reset-init'
+  })
+}
+
+async function refreshUsers () {
+  const usersOnStream = await getFullUsersOnStreams()
+  const userLoginsOnStream = usersOnStream.map(u => u.user_login)
+
+  users.value = (await getUsers()).map((user) => ({
+    user_login: user,
+    online: userLoginsOnStream.includes(user),
+    data: usersOnStream.find((userOnStream) => userOnStream.user_login === user)
+  }))
+}
+
+async function removeUser (userLogin) {
+  const actualUsers = await getUsers()
+  State.users = actualUsers.filter((u) => u !== userLogin)
+}
+
+async function getUsers () {
+  return (await State.users) ?? []
+}
+
+async function addUser (userLogin) {
+  const actualUsers = await getUsers()
+
+  State.users = [
+    userLogin,
+    ...actualUsers
+  ]
+}
+
+async function validateSubmit () {
+  loading.value = true
+  const isValid = await formRef.value.validate()
+
+  if (!isValid) {
+    loading.value = false
+    return
+  }
+
+  const strippedUserLogin = userLogin.value.toLowerCase()
+
+  const fetchedUser = await getTwitchUserByLogin(strippedUserLogin, accessToken.value)
+
+  if (fetchedUser === null) {
+    error.value = 'User not found'
+    loading.value = false
+    return
+  }
+
+  await addUser(fetchedUser.login)
+
+  userLogin.value = undefined
+  loading.value = false
+  error.value = undefined
+  inputRef.value?.focus()
+
+  await chrome?.runtime?.sendMessage({
+    type: 'reset'
+  })
+
+  await formRef.value.resetValidation()
+  await refreshUsers()
+}
 
 </script>
-
-<style scoped>
-html, body {
-  margin: 0;
-  background-color: #961ddc;
-}
-
-.content {
-  min-width: 200px;
-  min-height: 300px;
-
-  padding: 10px;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-
-  text-align: center;
-
-  max-height: 250px;
-  overflow-x: auto;
-}
-
-input {
-  height: 20px;
-  width: 100%
-}
-
-button {
-  height: 20px;
-  width: 100%;
-}
-
-li {
-  background-color: #e0e0e0;
-
-  height: auto;
-  width: 100%;
-
-  position: relative;
-  padding: 5px 0;
-  font-weight: bold;
-}
-
-li .li-delete {
-  width: 20px;
-  height: 20px;
-
-  position: absolute;
-  top: 2px;
-  right: 0;
-  line-height: 20px;
-  font-weight: bold;
-  font-size: 20px;
-  color: #da043c;
-  cursor: pointer;
-}
-
-li .li-status {
-  width: 15px;
-  height: 15px;
-
-  position: absolute;
-  top: 4px;
-  left: 3px;
-  border-radius: 15px;
-  background: #da043c;
-  cursor: pointer;
-}
-
-</style>

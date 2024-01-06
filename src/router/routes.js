@@ -1,21 +1,11 @@
 const routes = [
   {
-    path: '/',
-    component: () => import('layouts/MainLayout.vue'),
-    children: [
-      {
-        path: '/options',
-        component: () => import('pages/OptionsPage.vue')
-      },
-      {
-        path: '/popup',
-        component: () => import('pages/PopupPage.vue')
-      },
-      {
-        path: '/devtools',
-        component: () => import('pages/DevToolsPage.vue')
-      }
-    ]
+    path: '/popup',
+    component: () => import('layouts/PopupLayout.vue')
+  },
+  {
+    path: '/options',
+    component: () => import('layouts/OptionsLayout.vue')
   }
 ]
 
