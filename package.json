@@ -1,6 +1,6 @@
 {
   "name": "notify-me-ttv",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Get notified when someone in your custom list has started livestream on Twitch",
   "productName": "NotifyMeTTV",
   "author": "loicngr <pro.nogierloic@gmail.com>",
